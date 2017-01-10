@@ -1,0 +1,65 @@
+
+Q3.
+
+1. I have used a map container which is collection of key-value pairs, sorted by keys & keys are unique. In my case, the key is Thread id which would be unique. Values would be int/float/bool etc.. accordingly. Searches take logarithmic time.
+
+2. Instead of fully synchronizing the object, I have used lock_guard with a mutex where ever synchronicity is required. Lock guard ensures the mutex is unlocked as soon as lock goes out of scope. Mutex is used to lock or unlock the required instructions.
+
+3. 
+
+Below are conflicting because order of execution matters in these cases. These operations are not commutative meaning result of (p,q) != result (q,p)
+Conflicting operations ->
+a,a 
+a,b 
+a,c
+a,d
+a,e
+a,f
+b,b
+b,d
+b,e
+d,e
+e,e
+
+Below are non conflicting because order of execution does not matter in this case. These operations are commutative result of (p,q) = result (q,p)
+Non Conflicting Operations ->
+c,c
+c,d
+d,d
+b,c
+b,f
+c,e
+c,f
+d,f
+e,f
+f,f
+
+a. Set value where the thread does not have a preexisting value
+b. Set value where the thread has a preexisting value
+c. Attempt to read a non-existing value
+d. Read an existing value
+e. Remove a value
+f. Attempt to remove a non-existing value
+
+4. Possible Data-races
+
+We synchronization in order to prevent data races. In the current implementation, all variables are protected from data race conditions by using lock guard. Hadn't we used synchronization mechanism, following conflicts may lead for a data race to occur. A data race occurs when two threads access the same variable concurrently and at least one of the accesses is a write.
+
+a,a
+a,b
+a,c
+a,d
+a,e
+a,f
+b,b
+b,d
+b,e
+d,e
+e,e
+
+which is basically all the conflicting operations.
+
+5.
+Instead of object synchronization we have already lessened the synchronized by using lock guards mechanism.
+Not just knowing the number of threads but if we can know the ids of all the threads that would be accessing the threadLocal in advance, we can hugely simplify things. If there is a way that each threads knows its own unique id, all variables can be initialized even before any of the thread initializes the value. We can probably create an array where each index maps to some thread id which is predetermined and would be able to access that directly. Remove, set and get all can happen simultaneously without any synchronization or using any locks.
+Apart from this we cannot get any advantage by disabling set after remove has been called. This is because even if we disable set after remove, consider the case where five newly created threads have called set. In this case, there would be a data race among those newly created five threads. Hence, we cannot lessen the synchronization without handling all the possible data races.
